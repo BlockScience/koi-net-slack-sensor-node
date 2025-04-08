@@ -1,0 +1,8 @@
+koi-net>=1.0.0b6
+rid-lib>=3.2.2
+rich
+fastapi
+uvicorn
+slack_bolt
+aiohttp
+python-dotenv
