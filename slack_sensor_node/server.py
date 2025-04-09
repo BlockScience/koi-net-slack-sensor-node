@@ -19,7 +19,7 @@ from koi_net.protocol.consts import (
     FETCH_MANIFESTS_PATH,
     FETCH_BUNDLES_PATH
 )
-from .core import node, async_slack_handler, knowledge_procesor_thread
+from .core import node, async_slack_handler
 from . import backfill
 
 
@@ -27,17 +27,11 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    knowledge_procesor_thread.start()
-    
-    node.initialize()
+async def lifespan(app: FastAPI):    
+    node.start()
     yield
     
-    logger.info("Shutting down, waiting for kobj queue to empty...")
-    node.processor.kobj_queue.join()
-    logger.info("Done")
-    
-    node.finalize()
+    node.stop()
 
 app = FastAPI(
     lifespan=lifespan, 
