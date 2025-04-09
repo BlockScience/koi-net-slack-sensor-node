@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, Request
 from koi_net.processor.knowledge_object import KnowledgeSource
@@ -20,6 +21,7 @@ from koi_net.protocol.consts import (
     FETCH_BUNDLES_PATH
 )
 from .core import node, async_slack_handler
+from .config import LAST_PROCESSED_TS, OBSERVING_CHANNELS
 from . import backfill
 
 
@@ -29,8 +31,15 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):    
     node.start()
-    yield
     
+    asyncio.create_task(
+        backfill.backfill_messages(
+            channel_ids=OBSERVING_CHANNELS,
+            after=LAST_PROCESSED_TS
+        )
+    )
+    
+    yield
     node.stop()
 
 app = FastAPI(
