@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,3 +18,9 @@ OBSERVING_CHANNELS = [
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 SLACK_APP_TOKEN = os.environ["SLACK_APP_TOKEN"]
+
+try:
+    with open("state.json", "r") as f:
+        LAST_PROCESSED_TS = json.load(f).get("last_processed_ts", 0)
+except FileNotFoundError:
+    LAST_PROCESSED_TS = 0

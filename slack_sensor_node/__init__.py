@@ -8,4 +8,4 @@ logging.basicConfig(
     handlers=[RichHandler()]
 )
 
-logging.getLogger("koi_net").setLevel(logging.DEBUG)
+# logging.getLogger("koi_net").setLevel(logging.DEBUG)
