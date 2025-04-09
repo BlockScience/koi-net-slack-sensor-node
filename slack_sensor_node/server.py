@@ -1,7 +1,6 @@
 import logging
-import threading
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, BackgroundTasks, APIRouter, Request
+from fastapi import FastAPI, APIRouter, Request
 from koi_net.processor.knowledge_object import KnowledgeSource
 from koi_net.protocol.api_models import (
     PollEvents,
@@ -20,31 +19,24 @@ from koi_net.protocol.consts import (
     FETCH_MANIFESTS_PATH,
     FETCH_BUNDLES_PATH
 )
-from .core import node, async_slack_handler
+from .core import node, async_slack_handler, knowledge_procesor_thread
 from . import backfill
 
 
 logger = logging.getLogger(__name__)
 
 
-flush_lock = threading.Lock()
-def safe_flush_kobj_queue():
-    if flush_lock.acquire():
-        try:
-            logger.info("acquired flush lock")
-            node.processor.flush_kobj_queue()
-        finally:
-            logger.info("released flush lock")
-            flush_lock.release()
-    else:
-        logger.info("flush_kobj_queue already in progress, skipping")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    node.initialize()
+    knowledge_procesor_thread.start()
     
+    node.initialize()
     yield
+    
+    logger.info("Shutting down, waiting for kobj queue to empty...")
+    node.processor.kobj_queue.join()
+    logger.info("Done")
+    
     node.finalize()
 
 app = FastAPI(
@@ -53,7 +45,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-@app.post("/slack/listener")
+
+@app.post("/slack-event-listener")
 async def slack_listener(request: Request):
     return await async_slack_handler.handle(request)
 
@@ -62,12 +55,11 @@ koi_net_router = APIRouter(
 )
 
 @koi_net_router.post(BROADCAST_EVENTS_PATH)
-def broadcast_events(req: EventsPayload, background: BackgroundTasks):
+def broadcast_events(req: EventsPayload):
     logger.info(f"Request to {BROADCAST_EVENTS_PATH}, received {len(req.events)} event(s)")
     for event in req.events:
         node.processor.handle(event=event, source=KnowledgeSource.External)
     
-    background.add_task(safe_flush_kobj_queue)
 
 @koi_net_router.post(POLL_EVENTS_PATH)
 def poll_events(req: PollEvents) -> EventsPayload:

@@ -2,7 +2,7 @@ import asyncio
 from slack_sdk.errors import SlackApiError
 from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
-from .core import node, slack_app
+from .core import node, slack_app, knowledge_procesor_thread
 from .config import OBSERVING_CHANNELS
 
 
@@ -116,8 +116,12 @@ async def backfill_messages(channel_ids: list[str] = [], after=0):
     node.processor.flush_kobj_queue()
                         
 if __name__ == "__main__":
+    knowledge_procesor_thread.start()
+    
     node.initialize()
     
     asyncio.run(
         backfill_messages(
             channel_ids=OBSERVING_CHANNELS))
+    
+    node.processor.kobj_queue.join()
