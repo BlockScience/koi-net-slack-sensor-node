@@ -60,10 +60,8 @@ def update_last_processed_ts(processor: ProcessorInterface, kobj: KnowledgeObjec
     
     global LAST_PROCESSED_TS
     if ts < LAST_PROCESSED_TS: 
-        logger.warning(f"{ts} smaller")
         return
     
-    logger.warning(f"{ts} larger")
     LAST_PROCESSED_TS = ts
     
     with open("state.json", "w") as f:
