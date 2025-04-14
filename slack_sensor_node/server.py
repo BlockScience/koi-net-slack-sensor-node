@@ -21,6 +21,7 @@ from koi_net.protocol.consts import (
     FETCH_BUNDLES_PATH
 )
 from .core import node, async_slack_handler
+from .dereference import fetch_missing
 from .config import LAST_PROCESSED_TS, OBSERVING_CHANNELS
 from . import backfill
 
@@ -58,29 +59,30 @@ koi_net_router = APIRouter(
 )
 
 @koi_net_router.post(BROADCAST_EVENTS_PATH)
-def broadcast_events(req: EventsPayload):
+async def broadcast_events(req: EventsPayload):
     logger.info(f"Request to {BROADCAST_EVENTS_PATH}, received {len(req.events)} event(s)")
     for event in req.events:
         node.processor.handle(event=event, source=KnowledgeSource.External)
     
 
 @koi_net_router.post(POLL_EVENTS_PATH)
-def poll_events(req: PollEvents) -> EventsPayload:
+async def poll_events(req: PollEvents) -> EventsPayload:
     logger.info(f"Request to {POLL_EVENTS_PATH}")
     events = node.network.flush_poll_queue(req.rid)
     return EventsPayload(events=events)
 
 @koi_net_router.post(FETCH_RIDS_PATH)
-def fetch_rids(req: FetchRids) -> RidsPayload:
+async def fetch_rids(req: FetchRids) -> RidsPayload:
     return node.network.response_handler.fetch_rids(req)
 
 @koi_net_router.post(FETCH_MANIFESTS_PATH)
-def fetch_manifests(req: FetchManifests) -> ManifestsPayload:
-    return node.network.response_handler.fetch_manifests(req)
+async def fetch_manifests(req: FetchManifests) -> ManifestsPayload:
+    manifests_payload = node.network.response_handler.fetch_manifests(req)
+    return await fetch_missing(manifests_payload)
 
 @koi_net_router.post(FETCH_BUNDLES_PATH)
-def fetch_bundles(req: FetchBundles) -> BundlesPayload:
-    return node.network.response_handler.fetch_bundles(req)
-
+async def fetch_bundles(req: FetchBundles) -> BundlesPayload:
+    bundles_payload = node.network.response_handler.fetch_bundles(req)
+    return await fetch_missing(bundles_payload)
 
 app.include_router(koi_net_router)
