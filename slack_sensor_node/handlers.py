@@ -1,14 +1,11 @@
 import logging
-import json
 from koi_net.processor.handler import HandlerType
 from koi_net.processor.knowledge_object import KnowledgeSource, KnowledgeObject
 from koi_net.processor.interface import ProcessorInterface
-from koi_net.protocol.event import EventType
 from koi_net.protocol.edge import EdgeType
-from koi_net.protocol.node import NodeProfile
+from koi_net.protocol.node import NodeProfile, NodeType
 from koi_net.protocol.helpers import generate_edge_bundle
 from rid_lib.types import KoiNetNode, SlackMessage
-from .config import LAST_PROCESSED_TS
 from .core import node
 
 logger = logging.getLogger(__name__)
@@ -16,24 +13,32 @@ logger = logging.getLogger(__name__)
 
 @node.processor.register_handler(HandlerType.Network, rid_types=[KoiNetNode])
 def coordinator_contact(processor: ProcessorInterface, kobj: KnowledgeObject):
-    # when I found out about a new node
-    if kobj.normalized_event_type != EventType.NEW: 
-        return
-    
     node_profile = kobj.bundle.validate_contents(NodeProfile)
     
     # looking for event provider of nodes
     if KoiNetNode not in node_profile.provides.event:
         return
     
+    # already have an edge established
+    if processor.network.graph.get_edge_profile(
+        source=kobj.rid,
+        target=processor.identity.rid,
+    ) is not None:
+        return
+    
     logger.info("Identified a coordinator!")
     logger.info("Proposing new edge")
+    
+    if processor.identity.profile.node_type == NodeType.FULL:
+        edge_type = EdgeType.WEBHOOK
+    else:
+        edge_type = EdgeType.POLL
     
     # queued for processing
     processor.handle(bundle=generate_edge_bundle(
         source=kobj.rid,
         target=node.identity.rid,
-        edge_type=EdgeType.WEBHOOK,
+        edge_type=edge_type,
         rid_types=[KoiNetNode]
     ))
     
@@ -57,12 +62,9 @@ def coordinator_contact(processor: ProcessorInterface, kobj: KnowledgeObject):
 def update_last_processed_ts(processor: ProcessorInterface, kobj: KnowledgeObject):
     msg_rid: SlackMessage = kobj.rid
     ts = float(msg_rid.ts)
-    
-    global LAST_PROCESSED_TS
-    if ts < LAST_PROCESSED_TS: 
+        
+    if ts < processor.config.slack.last_processed_ts:
         return
     
-    LAST_PROCESSED_TS = ts
-    
-    with open("state.json", "w") as f:
-        json.dump({"last_processed_ts": LAST_PROCESSED_TS}, f)
+    processor.config.slack.last_processed_ts = ts
+    processor.config.save_to_yaml()

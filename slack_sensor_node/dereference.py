@@ -1,10 +1,10 @@
 from rid_lib import RID
 from rid_lib.types import SlackMessage, SlackChannel, SlackUser, SlackWorkspace
 from rid_lib.ext import Bundle
-from koi_net.protocol.api_models import ManifestsPayload, BundlesPayload
+from koi_net.protocol.api_models import BundlesPayload
 from .core import node, slack_app
 
-async def fetch_missing(payload: ManifestsPayload | BundlesPayload):
+async def fetch_missing(payload: BundlesPayload):
     found_bundles: list[Bundle] = []
     for rid in payload.not_found:
         if type(rid) not in (
@@ -17,12 +17,7 @@ async def fetch_missing(payload: ManifestsPayload | BundlesPayload):
     
     for bundle in found_bundles:
         payload.not_found.remove(bundle.rid)
-        
-        if type(payload) == ManifestsPayload:
-            payload.manifests.append(bundle.manifest)
-            
-        elif type(payload) == BundlesPayload:
-            payload.bundles.append(bundle)
+        payload.bundles.append(bundle)
     
     return payload
 

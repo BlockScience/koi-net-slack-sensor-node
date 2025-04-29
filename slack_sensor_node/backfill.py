@@ -4,7 +4,7 @@ from slack_sdk.errors import SlackApiError
 from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
 from .core import node, slack_app
-from .config import LAST_PROCESSED_TS, OBSERVING_CHANNELS
+from .config import SlackSensorNodeConfig
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,15 +22,12 @@ async def auto_retry(function, **params):
             logger.warning("unknown error", e)
             quit()
 
-async def backfill_messages(
-    channel_ids: list[str] = [], 
-    after: int = 0
-):
+async def backfill_messages(config: SlackSensorNodeConfig):
     resp = await slack_app.client.team_info()
     team = resp.data["team"]
     team_id = team["id"]
 
-    channels = [{"id": cid} for cid in channel_ids]
+    channels = [{"id": cid} for cid in config.slack.allowed_channels]
     
     logger.info("Scanning for channels")
     
@@ -57,7 +54,7 @@ async def backfill_messages(
                 channel=channel_id,
                 limit=500,
                 cursor=message_cursor,
-                oldest=after
+                oldest=config.slack.last_processed_ts
             )
             
             if not result["messages"]: break
@@ -131,10 +128,7 @@ if __name__ == "__main__":
     node.start()
     
     asyncio.run(
-        backfill_messages(
-            channel_ids=OBSERVING_CHANNELS,
-            after=LAST_PROCESSED_TS
-        )
+        backfill_messages(node.config)
     )
     
     node.stop()
