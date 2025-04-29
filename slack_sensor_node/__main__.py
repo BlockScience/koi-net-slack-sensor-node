@@ -1,4 +1,8 @@
 import uvicorn
-from .config import HOST, PORT
+from .core import node
 
-uvicorn.run("slack_sensor_node.server:app", host=HOST, port=PORT)
+uvicorn.run(
+    app="slack_sensor_node.server:app",
+    host=node.config.server.host, 
+    port=node.config.server.port
+)

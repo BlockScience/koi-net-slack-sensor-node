@@ -22,7 +22,6 @@ from koi_net.protocol.consts import (
 )
 from .core import node, async_slack_handler
 from .dereference import fetch_missing
-from .config import LAST_PROCESSED_TS, OBSERVING_CHANNELS
 from . import backfill
 
 
@@ -34,10 +33,7 @@ async def lifespan(app: FastAPI):
     node.start()
     
     asyncio.create_task(
-        backfill.backfill_messages(
-            channel_ids=OBSERVING_CHANNELS,
-            after=LAST_PROCESSED_TS
-        )
+        backfill.backfill_messages(node.config)
     )
     
     yield
@@ -77,8 +73,7 @@ async def fetch_rids(req: FetchRids) -> RidsPayload:
 
 @koi_net_router.post(FETCH_MANIFESTS_PATH)
 async def fetch_manifests(req: FetchManifests) -> ManifestsPayload:
-    manifests_payload = node.network.response_handler.fetch_manifests(req)
-    return await fetch_missing(manifests_payload)
+    return node.network.response_handler.fetch_manifests(req)
 
 @koi_net_router.post(FETCH_BUNDLES_PATH)
 async def fetch_bundles(req: FetchBundles) -> BundlesPayload:

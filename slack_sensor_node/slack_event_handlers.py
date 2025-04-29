@@ -3,7 +3,6 @@ from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
 from koi_net.protocol.event import EventType
 from .core import node, slack_app
-from .config import OBSERVING_CHANNELS
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ async def handle_message_event(event):
             ts=event["ts"]
         )
         
-        if message_rid.channel_id not in OBSERVING_CHANNELS:
+        if message_rid.channel_id not in node.config.slack.allowed_channels:
             return
         
         # normalize to non event message structure

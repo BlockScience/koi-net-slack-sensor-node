@@ -1,26 +1,40 @@
-import os
-import json
-from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from koi_net.protocol.node import NodeProfile, NodeType
+from koi_net.config import Config, EnvConfig, KoiNetConfig
+from rid_lib.types import (
+    SlackMessage, 
+    SlackChannel, 
+    SlackUser, 
+    SlackWorkspace
+)
 
-load_dotenv()
 
-HOST = "127.0.0.1"
-PORT = 8001
-URL = f"http://{HOST}:{PORT}/koi-net"
+class SlackEnvConfig(EnvConfig):
+    slack_bot_token: str | None = "SLACK_BOT_TOKEN"
+    slack_signing_secret: str | None = "SLACK_SIGNING_SECRET"
+    slack_app_token: str | None = "SLACK_APP_TOKEN"
+    
+class SlackConfig(BaseModel):
+    allowed_channels: list[str] | None = []
+    last_processed_ts: float | None = 0.0
 
-FIRST_CONTACT = "http://127.0.0.1:8000/koi-net"
-
-OBSERVING_CHANNELS = [
-    "C0593RJJ2CW", #koi-research
-    "C082YTFAA83"  #koi-sensor-testing
-]
-
-SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
-SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
-SLACK_APP_TOKEN = os.environ["SLACK_APP_TOKEN"]
-
-try:
-    with open("state.json", "r") as f:
-        LAST_PROCESSED_TS = json.load(f).get("last_processed_ts", 0)
-except FileNotFoundError:
-    LAST_PROCESSED_TS = 0
+class SlackSensorNodeConfig(Config):
+    koi_net: KoiNetConfig | None = Field(default_factory = lambda: 
+        KoiNetConfig(
+            node_name="slack-sensor",
+            node_profile=NodeProfile(
+                node_type=NodeType.FULL,
+                event=[
+                    SlackMessage
+                ],
+                state=[
+                    SlackMessage, 
+                    SlackUser, 
+                    SlackChannel, 
+                    SlackWorkspace
+                ]
+            )
+        )
+    )
+    env: SlackEnvConfig | None = Field(default_factory=SlackEnvConfig)
+    slack: SlackConfig | None = Field(default_factory=SlackConfig)
