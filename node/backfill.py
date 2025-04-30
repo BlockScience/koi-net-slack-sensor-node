@@ -9,15 +9,19 @@ from .config import SlackSensorNodeConfig
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-async def auto_retry(function, **params):
+async def auto_retry(function, **kwargs):
     try:
-        return await function(**params)
+        return await function(**kwargs)
     except SlackApiError as e:
         if e.response["error"] == "ratelimited":
             retry_after = int(e.response.headers["Retry-After"])
             logger.info(f"timed out, waiting {retry_after} seconds")
             await asyncio.sleep(retry_after)
-            return await function(**params)
+            return await function(**kwargs)
+        elif e.response["error"] == "not_in_channel":
+            logger.info(f"not in channel {kwargs['channel']}, attempting to join")
+            await slack_app.client.conversations_join(channel=kwargs["channel"])
+            return await function(**kwargs)
         else:
             logger.warning("unknown error", e)
             quit()

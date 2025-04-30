@@ -13,11 +13,7 @@ node = NodeInterface(
     use_kobj_processor_thread=True
 )
 
-(node.config.env.slack_bot_token)
-
 network = NetworkInterface(node.config, node.cache, node.identity)
-network.config.env
-node.config.env.slack_app_token
 
 from . import handlers
 

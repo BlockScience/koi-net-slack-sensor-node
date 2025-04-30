@@ -61,10 +61,9 @@ def coordinator_contact(processor: ProcessorInterface, kobj: KnowledgeObject):
 @node.processor.register_handler(HandlerType.RID, rid_types=[SlackMessage])
 def update_last_processed_ts(processor: ProcessorInterface, kobj: KnowledgeObject):
     msg_rid: SlackMessage = kobj.rid
-    ts = float(msg_rid.ts)
         
-    if ts < processor.config.slack.last_processed_ts:
+    if float(msg_rid.ts) < float(processor.config.slack.last_processed_ts):
         return
     
-    processor.config.slack.last_processed_ts = ts
+    processor.config.slack.last_processed_ts = msg_rid.ts
     processor.config.save_to_yaml()
