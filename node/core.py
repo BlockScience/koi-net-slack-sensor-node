@@ -2,7 +2,6 @@ import logging
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from koi_net import NodeInterface
-from koi_net.network import NetworkInterface
 from .config import SlackSensorNodeConfig
 
 logger = logging.getLogger(__name__)
@@ -12,8 +11,6 @@ node = NodeInterface(
     config=SlackSensorNodeConfig.load_from_yaml("config.yaml"),
     use_kobj_processor_thread=True
 )
-
-network = NetworkInterface(node.config, node.cache, node.identity)
 
 from . import handlers
 
