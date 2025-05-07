@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from koi_net.protocol.node import NodeProfile, NodeType, NodeProvides
-from koi_net.config import Config, EnvConfig, KoiNetConfig
+from koi_net.config import NodeConfig, EnvConfig, KoiNetConfig
 from rid_lib.types import (
     SlackMessage, 
     SlackChannel, 
@@ -18,7 +18,7 @@ class SlackConfig(BaseModel):
     allowed_channels: list[str] | None = []
     last_processed_ts: str | None = "0"
 
-class SlackSensorNodeConfig(Config):
+class SlackSensorNodeConfig(NodeConfig):
     koi_net: KoiNetConfig | None = Field(default_factory = lambda: 
         KoiNetConfig(
             node_name="slack-sensor",
