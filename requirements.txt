@@ -1,8 +1,4 @@
-koi-net>=1.0.0b17
-rid-lib>=3.2.3
+koi-net>=1.1.0b4
 rich
-fastapi
-uvicorn
 slack_bolt
 aiohttp
-python-dotenv

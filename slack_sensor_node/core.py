@@ -1,4 +1,5 @@
 import logging
+from fastapi import Request
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from koi_net import NodeInterface
@@ -20,5 +21,9 @@ slack_app = AsyncApp(
 )
 
 async_slack_handler = AsyncSlackRequestHandler(slack_app)
+
+@node.server.app.post("/slack-event-listener")
+async def slack_listener(request: Request):
+    return await async_slack_handler.handle(request)
 
 from . import slack_event_handlers

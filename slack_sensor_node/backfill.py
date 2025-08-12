@@ -129,10 +129,10 @@ async def backfill_messages(config: SlackSensorNodeConfig):
     logger.info("done")
                         
 if __name__ == "__main__":    
-    node.start()
+    node.lifecycle.start()
     
     asyncio.run(
         backfill_messages(node.config)
     )
     
-    node.stop()
+    node.lifecycle.stop()
