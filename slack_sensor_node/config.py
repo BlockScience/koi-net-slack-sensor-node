@@ -10,16 +10,16 @@ from rid_lib.types import (
 
 
 class SlackEnvConfig(EnvConfig):
-    slack_bot_token: str | None = "SLACK_BOT_TOKEN"
-    slack_signing_secret: str | None = "SLACK_SIGNING_SECRET"
-    slack_app_token: str | None = "SLACK_APP_TOKEN"
+    slack_bot_token: str = "SLACK_BOT_TOKEN"
+    slack_signing_secret: str = "SLACK_SIGNING_SECRET"
+    slack_app_token: str = "SLACK_APP_TOKEN"
     
 class SlackConfig(BaseModel):
-    allowed_channels: list[str] | None = []
-    last_processed_ts: str | None = "0"
+    allowed_channels: list[str] = []
+    last_processed_ts: str = "0"
 
 class SlackSensorNodeConfig(NodeConfig):
-    koi_net: KoiNetConfig | None = Field(default_factory = lambda: 
+    koi_net: KoiNetConfig = Field(default_factory = lambda: 
         KoiNetConfig(
             node_name="slack-sensor",
             node_profile=NodeProfile(
@@ -38,5 +38,5 @@ class SlackSensorNodeConfig(NodeConfig):
             )
         )
     )
-    env: SlackEnvConfig | None = Field(default_factory=SlackEnvConfig)
-    slack: SlackConfig | None = Field(default_factory=SlackConfig)
+    env: SlackEnvConfig = Field(default_factory=SlackEnvConfig)
+    slack: SlackConfig = Field(default_factory=SlackConfig)
