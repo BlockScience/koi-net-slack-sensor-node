@@ -9,9 +9,6 @@ logger = logging.getLogger(__name__)
 
 @slack_app.event("message")
 async def handle_message_event(event):
-    # with open("slack_sensor/message.json", "w") as f:
-    #     json.dump(event, f, indent=2)
-
     subtype = event.get("subtype")
     # new message
     if not subtype:
@@ -74,5 +71,5 @@ async def handle_message_event(event):
             event_type=EventType.FORGET)
     
     else:
-        logger.info(f"Ignoring unsupport Slack message subtype {subtype}")
+        logger.info(f"Ignoring unsupported Slack message subtype {subtype}")
         return    
