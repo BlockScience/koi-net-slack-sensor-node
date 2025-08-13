@@ -1,15 +1,15 @@
 import asyncio
 import logging
+from koi_net.context import HandlerContext
 from slack_sdk.errors import SlackApiError
 from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
-from .core import node, slack_app
-from .config import SlackSensorNodeConfig
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-async def auto_retry(function, **kwargs):
+async def auto_retry(slack_app, function, **kwargs):
     try:
         return await function(**kwargs)
     except SlackApiError as e:
@@ -26,12 +26,12 @@ async def auto_retry(function, **kwargs):
             logger.warning("unknown error", e)
             quit()
 
-async def backfill_messages(config: SlackSensorNodeConfig):
+async def backfill_messages(slack_app, ctx: HandlerContext):
     resp = await slack_app.client.team_info()
     team = resp.data["team"]
     team_id = team["id"]
 
-    channels = [{"id": cid} for cid in config.slack.allowed_channels]
+    channels = [{"id": cid} for cid in ctx.config.slack.allowed_channels]
     
     logger.info("Scanning for channels")
     
@@ -54,11 +54,11 @@ async def backfill_messages(config: SlackSensorNodeConfig):
         message_cursor = None
         messages = []
         while not messages or message_cursor:
-            result = await auto_retry(slack_app.client.conversations_history,
+            result = await auto_retry(slack_app, slack_app.client.conversations_history,
                 channel=channel_id,
                 limit=500,
                 cursor=message_cursor,
-                oldest=config.slack.last_processed_ts
+                oldest=ctx.config.slack.last_processed_ts
             )
             
             if not result["messages"]: break
@@ -82,7 +82,7 @@ async def backfill_messages(config: SlackSensorNodeConfig):
                     contents=message
                 )
                 logger.info(f"{message_rid}")
-                node.processor.handle(bundle=message_bundle)                
+                ctx.handle(bundle=message_bundle)                
             
             thread_ts = message.get("thread_ts")
             
@@ -94,7 +94,7 @@ async def backfill_messages(config: SlackSensorNodeConfig):
                 threaded_message_cursor = None
                 threaded_messages = []
                 while not threaded_messages or threaded_message_cursor:
-                    result = await auto_retry(slack_app.client.conversations_replies,
+                    result = await auto_retry(slack_app, slack_app.client.conversations_replies,
                         channel=channel_id,
                         ts=thread_ts,
                         limit=500,
@@ -124,15 +124,15 @@ async def backfill_messages(config: SlackSensorNodeConfig):
                         )
                         
                         logger.info(f"{threaded_message_rid}")
-                        node.processor.handle(bundle=threaded_message_bundle)     
+                        ctx.handle(bundle=threaded_message_bundle)     
 
     logger.info("done")
                         
-if __name__ == "__main__":    
-    node.lifecycle.start()
+# if __name__ == "__main__":    
+#     node.lifecycle.start()
     
-    asyncio.run(
-        backfill_messages(node.config)
-    )
+#     asyncio.run(
+#         backfill_messages(node.config)
+#     )
     
-    node.lifecycle.stop()
+#     node.lifecycle.stop()
