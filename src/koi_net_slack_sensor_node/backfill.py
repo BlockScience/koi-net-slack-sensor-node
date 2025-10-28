@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from koi_net.context import HandlerContext
+from koi_net.config import NodeConfig
+from koi_net.context import HandlerContext, ProcessorInterface
 from slack_sdk.errors import SlackApiError
 from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
@@ -26,12 +27,16 @@ async def auto_retry(slack_app, function, **kwargs):
             logger.warning("unknown error", e)
             quit()
 
-async def backfill_messages(slack_app, ctx: HandlerContext):
+async def backfill_messages(
+    slack_app, 
+    processor: ProcessorInterface,
+    config: NodeConfig
+):
     resp = await slack_app.client.team_info()
     team = resp.data["team"]
     team_id = team["id"]
 
-    channels = [{"id": cid} for cid in ctx.config.slack.allowed_channels]
+    channels = [{"id": cid} for cid in config.slack.allowed_channels]
     
     logger.info("Scanning for channels")
     
@@ -58,7 +63,7 @@ async def backfill_messages(slack_app, ctx: HandlerContext):
                 channel=channel_id,
                 limit=500,
                 cursor=message_cursor,
-                oldest=ctx.config.slack.last_processed_ts
+                oldest=config.slack.last_processed_ts
             )
             
             if not result["messages"]: break
@@ -82,7 +87,7 @@ async def backfill_messages(slack_app, ctx: HandlerContext):
                     contents=message
                 )
                 logger.info(f"{message_rid}")
-                ctx.handle(bundle=message_bundle)                
+                processor.handle(bundle=message_bundle)                
             
             thread_ts = message.get("thread_ts")
             
@@ -124,7 +129,7 @@ async def backfill_messages(slack_app, ctx: HandlerContext):
                         )
                         
                         logger.info(f"{threaded_message_rid}")
-                        ctx.handle(bundle=threaded_message_bundle)     
+                        processor.handle(bundle=threaded_message_bundle)     
 
     logger.info("done")
                         
