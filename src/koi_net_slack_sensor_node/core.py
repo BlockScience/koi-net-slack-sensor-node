@@ -2,7 +2,7 @@ import logging
 from fastapi import Request
 from koi_net import NodeInterface
 
-from slack_sensor_node.lifecycle import SlackSensorLifecycle
+from .lifecycle import SlackSensorLifecycle
 from .config import SlackSensorNodeConfig
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,0 @@
-koi-net>=1.1.0b5
-rich
-slack_bolt
-aiohttp
