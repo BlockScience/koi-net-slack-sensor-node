@@ -13,10 +13,16 @@ class SlackSensorLifecycle(NodeLifecycle):
         print("called async run")
         try:
             self.start()
-            asyncio.create_task(
-                backfill.backfill_messages(self.slack_app, self.handler_context))
+            
             yield
         except KeyboardInterrupt:
             pass
         finally:
             self.stop()
+            
+    
+    def start(self):
+        super().start()
+        asyncio.create_task(
+                backfill.backfill_messages(
+                    self.slack_app, self.processor, self.config))
