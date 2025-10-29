@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/home/dev/koi-net-slack-sensor-node
-ExecStart=/home/dev/koi-net-slack-sensor-node/venv/bin/python3 -m slack_sensor_node
+ExecStart=/home/dev/koi-net-slack-sensor-node/.venv/bin/python3 -m koi_net_slack_sensor_node
 Restart=always
 
 [Install]
