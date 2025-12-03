@@ -1,34 +1,33 @@
 import logging
-from fastapi import Request
-from koi_net import NodeInterface
+from koi_net.core import FullNode
+from slack_bolt.async_app import AsyncApp
 
-from .lifecycle import SlackSensorLifecycle
+from .backfill import Backfiller
+
+from .server import SlackSensorNodeServer
 from .config import SlackSensorNodeConfig
+from .handlers import update_last_processed_ts
+from .slack_event_handlers import SlackEventHandler
 
 logger = logging.getLogger(__name__)
 
-node = NodeInterface(
-    config=SlackSensorNodeConfig.load_from_yaml("config.yaml"),
-    use_kobj_processor_thread=True,
-    NodeLifecycleOverride=SlackSensorLifecycle
-)
 
-from . import handlers
 
-from slack_bolt.async_app import AsyncApp
-from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
+class SlackSensorNode(FullNode):
+    config_schema = SlackSensorNodeConfig
+    
+    slack_app: AsyncApp = lambda config: AsyncApp(
+        token=config.env.slack_bot_token,
+        signing_secret=config.env.slack_signing_secret
+    )
+    
+    server = SlackSensorNodeServer
+    backfiller = Backfiller
+    slack_event_handler = SlackEventHandler
+    
+    knowledge_handlers = FullNode.knowledge_handlers + [
+        update_last_processed_ts
+    ]
 
-slack_app = AsyncApp(
-    token=node.config.env.slack_bot_token,
-    signing_secret=node.config.env.slack_signing_secret
-)
-
-async_slack_handler = AsyncSlackRequestHandler(slack_app)
-
-node.lifecycle.set_slack_app(slack_app)
-
-@node.server.app.post("/slack-event-listener")
-async def slack_listener(request: Request):
-    return await async_slack_handler.handle(request)
 
 from . import slack_event_handlers

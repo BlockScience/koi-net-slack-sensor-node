@@ -1,3 +1,3 @@
-from .core import node
+from .core import SlackSensorNode
 
-node.server.run()
+SlackSensorNode().run()
