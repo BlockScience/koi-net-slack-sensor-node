@@ -21,6 +21,8 @@ class SlackEventHandler:
         self.config = config
         self.kobj_queue = kobj_queue
         
+        self.register_handlers()
+        
     def register_handlers(self):
         @self.slack_app.event("message")
         async def handle_message_event(event):
@@ -60,8 +62,8 @@ class SlackEventHandler:
                 )
                 # normalize to non event message structure
                 data = event["message"]
-                del data["source_team"]
-                del data["user_team"]
+                data.pop("source_team", None)
+                data.pop("user_team", None)
                 
                 msg_bundle = Bundle.generate(
                     rid=message_rid,
