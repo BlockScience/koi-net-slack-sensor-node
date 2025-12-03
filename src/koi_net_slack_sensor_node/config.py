@@ -13,6 +13,7 @@ from koi_net.config.full_node import (
     NodeProvides
 )
 
+
 class SlackEnvConfig(EnvConfig):
     slack_bot_token: str = "SLACK_BOT_TOKEN"
     slack_signing_secret: str = "SLACK_SIGNING_SECRET"

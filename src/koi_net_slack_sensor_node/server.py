@@ -7,7 +7,7 @@ class SlackSensorNodeServer(NodeServer):
     def __init__(self, config, response_handler, slack_app):
         super().__init__(config, response_handler)
         self.slack_app = slack_app
-        
-        @self.router.post("/slack-event-listener")
+    
+        @self.app.post("/slack-event-listener")
         async def slack_listener(request: Request):
             return await AsyncSlackRequestHandler(self.slack_app).handle(request)
