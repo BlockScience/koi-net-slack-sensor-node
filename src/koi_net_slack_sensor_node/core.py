@@ -1,7 +1,7 @@
 from koi_net.core import FullNode
 from slack_bolt.async_app import AsyncApp
 
-from .backfill import Backfiller
+from .backfiller import Backfiller
 from .server import SlackSensorNodeServer
 from .config import SlackSensorNodeConfig
 from .handlers import update_last_processed_ts
@@ -16,7 +16,7 @@ class SlackSensorNode(FullNode):
         signing_secret=config.env.slack_signing_secret
     )
     
-    server = SlackSensorNodeServer
+    entrypoint = SlackSensorNodeServer
     backfiller = Backfiller
     slack_event_handler = SlackEventHandler
     
