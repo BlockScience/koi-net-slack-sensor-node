@@ -1,17 +1,16 @@
 import asyncio
-import logging
 
+import structlog
 from koi_net.core import KobjQueue
 from slack_bolt.async_app import AsyncApp
 from slack_sdk.errors import SlackApiError
 from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
 
-from koi_net_slack_sensor_node.config import SlackSensorNodeConfig
+from .config import SlackSensorNodeConfig
 
+log = structlog.stdlib.get_logger()
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class Backfiller:
     def __init__(
@@ -33,15 +32,15 @@ class Backfiller:
         except SlackApiError as e:
             if e.response["error"] == "ratelimited":
                 retry_after = int(e.response.headers["Retry-After"])
-                logger.info(f"timed out, waiting {retry_after} seconds")
+                log.info(f"timed out, waiting {retry_after} seconds")
                 await asyncio.sleep(retry_after)
                 return await function(**kwargs)
             elif e.response["error"] == "not_in_channel":
-                logger.info(f"not in channel {kwargs['channel']}, attempting to join")
+                log.info(f"not in channel {kwargs['channel']}, attempting to join")
                 await self.slack_app.client.conversations_join(channel=kwargs["channel"])
                 return await function(**kwargs)
             else:
-                logger.warning("unknown error", e)
+                log.warning("unknown error", e)
                 quit()
 
     async def backfill_messages(self):
@@ -51,7 +50,7 @@ class Backfiller:
 
         channels = [{"id": cid} for cid in self.config.slack.allowed_channels]
         
-        logger.info("Scanning for channels")
+        log.info("Scanning for channels")
         
         # get list of channels
         channel_cursor = None
@@ -59,14 +58,14 @@ class Backfiller:
             resp = await self.slack_app.client.conversations_list(cursor=channel_cursor)
             result = resp.data
             channels.extend(result["channels"])
-            logger.info(f"Found {len(result['channels'])} channels")
+            log.info(f"Found {len(result['channels'])} channels")
             channel_cursor = result.get("response_metadata", {}).get("next_cursor")
 
-        logger.info(f"Scanning {len(channels)} channels for messages")
+        log.info(f"Scanning {len(channels)} channels for messages")
         for channel in channels:
             channel_id = channel["id"]
             
-            logger.info(f"Scanning {channel_id}...")
+            log.info(f"Scanning {channel_id}...")
 
             # get list of messages in channel
             message_cursor = None
@@ -82,13 +81,13 @@ class Backfiller:
                 if not result["messages"]: break
                 
                 messages.extend(result["messages"])
-                logger.info(f"Found {len(result['messages'])} messages")
+                log.info(f"Found {len(result['messages'])} messages")
                 if result["has_more"]:
                     message_cursor = result["response_metadata"]["next_cursor"]
                 else:
                     message_cursor = None
 
-            logger.info(f"Scanning {len(messages)} messages")
+            log.info(f"Scanning {len(messages)} messages")
             messages.reverse()
             for message in messages:
                 message_rid = SlackMessage(team_id, channel_id, message["ts"])
@@ -99,7 +98,7 @@ class Backfiller:
                         rid=message_rid,
                         contents=message
                     )
-                    logger.info(f"{message_rid}")
+                    log.info(f"{message_rid}")
                     self.kobj_queue.push(bundle=message_bundle)
                 
                 thread_ts = message.get("thread_ts")
@@ -126,7 +125,7 @@ class Backfiller:
                         else:
                             threaded_message_cursor = None
                             
-                    logger.info(f"{message_rid} thread with {len(threaded_messages)} messages")
+                    log.info(f"{message_rid} thread with {len(threaded_messages)} messages")
                     
                     # don't double count thread parent message
                     for threaded_message in threaded_messages[1:]:
@@ -141,7 +140,7 @@ class Backfiller:
                                 contents=threaded_message
                             )
                             
-                            logger.info(f"{threaded_message_rid}")
+                            log.info(f"{threaded_message_rid}")
                             self.kobj_queue.push(bundle=threaded_message_bundle)     
 
-        logger.info("done")
+        log.info("done")

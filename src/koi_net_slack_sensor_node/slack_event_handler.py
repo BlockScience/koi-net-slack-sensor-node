@@ -1,5 +1,4 @@
-import logging
-
+import structlog
 from slack_bolt.async_app import AsyncApp
 from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
@@ -8,7 +7,8 @@ from koi_net.protocol.event import EventType
 
 from .config import SlackSensorNodeConfig
 
-logger = logging.getLogger(__name__)
+log = structlog.stdlib.get_logger()
+
 
 class SlackEventHandler:
     def __init__(
@@ -17,7 +17,12 @@ class SlackEventHandler:
         config: SlackSensorNodeConfig,
         kobj_queue: KobjQueue
     ):
-        @slack_app.event("message")
+        self.slack_app = slack_app
+        self.config = config
+        self.kobj_queue = kobj_queue
+        
+    def register_handlers(self):
+        @self.slack_app.event("message")
         async def handle_message_event(event):
             subtype = event.get("subtype")
             # new message
@@ -28,7 +33,7 @@ class SlackEventHandler:
                     ts=event["ts"]
                 )
                 
-                if message_rid.channel_id not in config.slack.allowed_channels:
+                if message_rid.channel_id not in self.config.slack.allowed_channels:
                     return
                 
                 # normalize to non event message structure
@@ -42,9 +47,9 @@ class SlackEventHandler:
                     contents=data
                 )
                 
-                logger.info(f"Handling new Slack message {message_rid!r}")
+                log.info(f"Handling new Slack message {message_rid!r}")
                 
-                kobj_queue.push(bundle=msg_bundle)
+                self.kobj_queue.push(bundle=msg_bundle)
                 
             
             elif subtype == "message_changed":
@@ -63,9 +68,9 @@ class SlackEventHandler:
                     contents=data
                 )
                 
-                logger.info(f"Handling updated Slack message {message_rid!r}")
+                log.info(f"Handling updated Slack message {message_rid!r}")
                 
-                kobj_queue.push(bundle=msg_bundle)
+                self.kobj_queue.push(bundle=msg_bundle)
             
             elif subtype == "message_deleted":
                 message_rid = SlackMessage(
@@ -74,10 +79,10 @@ class SlackEventHandler:
                     ts=event["previous_message"]["ts"]
                 )
                 
-                logger.info(f"Handling deleted Slack message {message_rid!r}")
+                log.info(f"Handling deleted Slack message {message_rid!r}")
                 
-                kobj_queue.push(rid=message_rid, event_type=EventType.FORGET)
+                self.kobj_queue.push(rid=message_rid, event_type=EventType.FORGET)
             
             else:
-                logger.info(f"Ignoring unsupported Slack message subtype {subtype}")
+                log.info(f"Ignoring unsupported Slack message subtype {subtype}")
                 return
