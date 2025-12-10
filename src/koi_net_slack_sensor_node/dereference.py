@@ -2,10 +2,11 @@ from rid_lib import RID
 from rid_lib.types import SlackMessage, SlackChannel, SlackUser, SlackWorkspace
 from rid_lib.ext import Bundle
 from koi_net.protocol.api_models import BundlesPayload
+from slack_bolt.async_app import AsyncApp
 
 
 class Dereferencer:
-    def __init__(self, slack_app):
+    def __init__(self, slack_app: AsyncApp):
         self.slack_app = slack_app
         
     async def fetch_missing(self, payload: BundlesPayload):

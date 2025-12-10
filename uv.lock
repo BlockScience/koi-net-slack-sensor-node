@@ -782,7 +782,7 @@ wheels = [
 
 [[package]]
 name = "koi-net"
-version = "1.2.0b4"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -798,9 +798,9 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/61/9312849a41e1f4c5664ad9e7bfbbfe1c341941c34b7ceed57025017290a0/koi_net-1.2.0b4.tar.gz", hash = "sha256:ae9b2adba934a66c7f3a5b52582fe30271047888d69439677856352df8bf5a13", size = 113831, upload-time = "2025-11-19T15:39:28.235Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/99/698448f4c5f67268e99e4836d2b501db8ac1b5b7cadd80fbeb69fe8e20f5/koi_net-1.2.1.tar.gz", hash = "sha256:5631ce1ae81bf4d28b06675425caa659cb86c018629a60658dba98234d03883b", size = 103896, upload-time = "2025-12-05T20:29:12.277Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9f/4c/3142a911b7ae74c1441d36eef5be987caeaafd81d89270026daca1a4d49e/koi_net-1.2.0b4-py3-none-any.whl", hash = "sha256:61369f2a6eba308c4007cc67e8d18e096678e6f82985fe75b14b713882ca3b1e", size = 56547, upload-time = "2025-11-19T15:39:26.746Z" },
+    { url = "https://files.pythonhosted.org/packages/78/8a/4e0af5aadf3ef7a7122cbc33de0d088e109584367846ef8db0fecd076841/koi_net-1.2.1-py3-none-any.whl", hash = "sha256:b832eb53ed690d2d35814017fa65bb525122c31209944de09b66fc17b2269604", size = 57745, upload-time = "2025-12-05T20:29:10.618Z" },
 ]
 
 [[package]]
@@ -824,7 +824,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp" },
     { name = "build", marker = "extra == 'dev'" },
-    { name = "koi-net", specifier = ">=1.2.0b4" },
+    { name = "koi-net", specifier = ">=1.2.0" },
     { name = "rich" },
     { name = "slack-bolt", specifier = ">=1.26.0" },
     { name = "twine", marker = "extra == 'dev'", specifier = ">=6.0" },
