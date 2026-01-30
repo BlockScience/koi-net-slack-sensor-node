@@ -17,4 +17,4 @@ def update_last_processed_ts(ctx: HandlerContext, kobj: KnowledgeObject):
         return
     
     config.slack.last_processed_ts = msg_rid.ts
-    ctx.config_loader.save_to_yaml()
+    ctx.config.save_to_yaml()

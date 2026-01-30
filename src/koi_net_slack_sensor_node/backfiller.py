@@ -1,7 +1,9 @@
 import asyncio
+import threading
 
 import structlog
 from koi_net.core import KobjQueue
+from koi_net.build.threaded_component import ThreadedComponent
 from slack_bolt.async_app import AsyncApp
 from slack_sdk.errors import SlackApiError
 from rid_lib.ext import Bundle
@@ -12,7 +14,7 @@ from .config import SlackSensorNodeConfig
 log = structlog.stdlib.get_logger()
 
 
-class Backfiller:
+class Backfiller(ThreadedComponent):
     def __init__(
         self,
         slack_app: AsyncApp,
@@ -22,9 +24,15 @@ class Backfiller:
         self.slack_app = slack_app
         self.config = config
         self.kobj_queue = kobj_queue
+        self.should_exit = threading.Event()
         
     def start(self):
-        asyncio.run(self.backfill_messages())
+        self.should_exit.clear()
+        super().start()
+        
+    def stop(self):
+        self.should_exit.set()
+        super().stop()
 
     async def auto_retry(self, function, **kwargs):
         try:
@@ -42,6 +50,9 @@ class Backfiller:
             else:
                 log.warning("unknown error", e)
                 quit()
+                
+    def run(self):
+        asyncio.run(self.backfill_messages())
 
     async def backfill_messages(self):
         resp = await self.slack_app.client.team_info()
@@ -54,7 +65,7 @@ class Backfiller:
         
         # get list of channels
         channel_cursor = None
-        while not channels or channel_cursor:
+        while (not channels or channel_cursor) and not self.should_exit.is_set():
             resp = await self.slack_app.client.conversations_list(cursor=channel_cursor)
             result = resp.data
             channels.extend(result["channels"])
@@ -70,7 +81,7 @@ class Backfiller:
             # get list of messages in channel
             message_cursor = None
             messages = []
-            while not messages or message_cursor:
+            while (not messages or message_cursor) and not self.should_exit.is_set():
                 result = await self.auto_retry(self.slack_app.client.conversations_history,
                     channel=channel_id,
                     limit=500,
@@ -90,6 +101,9 @@ class Backfiller:
             log.info(f"Scanning {len(messages)} messages")
             messages.reverse()
             for message in messages:
+                if self.should_exit.is_set():
+                    return
+                
                 message_rid = SlackMessage(team_id, channel_id, message["ts"])
                 
                 if message.get("subtype") is None:
@@ -110,7 +124,7 @@ class Backfiller:
                 if thread_ts:
                     threaded_message_cursor = None
                     threaded_messages = []
-                    while not threaded_messages or threaded_message_cursor:
+                    while (not threaded_messages or threaded_message_cursor) and not self.should_exit.is_set():
                         result = await self.auto_retry(self.slack_app.client.conversations_replies,
                             channel=channel_id,
                             ts=thread_ts,
@@ -129,6 +143,9 @@ class Backfiller:
                     
                     # don't double count thread parent message
                     for threaded_message in threaded_messages[1:]:
+                        if self.should_exit.is_set():
+                            return
+                        
                         threaded_message_rid = SlackMessage(
                             team_id, 
                             channel_id, 
@@ -141,6 +158,6 @@ class Backfiller:
                             )
                             
                             log.info(f"{threaded_message_rid}")
-                            self.kobj_queue.push(bundle=threaded_message_bundle)     
+                            self.kobj_queue.push(bundle=threaded_message_bundle)
 
         log.info("done")

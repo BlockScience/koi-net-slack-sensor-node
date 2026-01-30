@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rid_lib.types import (
     SlackMessage, 
     SlackChannel, 
@@ -15,9 +15,9 @@ from koi_net.config.full_node import (
 
 
 class SlackEnvConfig(EnvConfig):
-    slack_bot_token: str = "SLACK_BOT_TOKEN"
-    slack_signing_secret: str = "SLACK_SIGNING_SECRET"
-    slack_app_token: str = "SLACK_APP_TOKEN"
+    slack_bot_token: str
+    slack_signing_secret: str
+    slack_app_token: str
     
 class SlackConfig(BaseModel):
     allowed_channels: list[str] = []
@@ -40,5 +40,5 @@ class SlackSensorNodeConfig(FullNodeConfig):
             )
         )
     )
-    env: SlackEnvConfig = SlackEnvConfig()
+    env: SlackEnvConfig = Field(default_factory=SlackEnvConfig)
     slack: SlackConfig = SlackConfig()
