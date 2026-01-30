@@ -4,8 +4,8 @@ from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 
 
 class SlackSensorNodeServer(NodeServer):
-    def __init__(self, config, response_handler, slack_app):
-        super().__init__(config, response_handler)
+    def __init__(self, log, logging_context, config, response_handler, slack_app):
+        super().__init__(log=log, logging_context=logging_context ,config=config, response_handler=response_handler)
         self.slack_app = slack_app
     
         @self.app.post("/slack-event-listener")
