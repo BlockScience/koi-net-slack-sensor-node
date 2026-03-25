@@ -1,4 +1,6 @@
-import structlog
+from dataclasses import dataclass
+from logging import Logger
+
 from slack_bolt.async_app import AsyncApp
 from rid_lib.ext import Bundle
 from rid_lib.types import SlackMessage
@@ -7,20 +9,15 @@ from koi_net.protocol.event import EventType
 
 from .config import SlackSensorNodeConfig
 
-log = structlog.stdlib.get_logger()
 
-
+@dataclass
 class SlackEventHandler:
-    def __init__(
-        self, 
-        slack_app: AsyncApp, 
-        config: SlackSensorNodeConfig,
-        kobj_queue: KobjQueue
-    ):
-        self.slack_app = slack_app
-        self.config = config
-        self.kobj_queue = kobj_queue
-        
+    log: Logger
+    slack_app: AsyncApp
+    config: SlackSensorNodeConfig
+    kobj_queue: KobjQueue
+    
+    def __post_init__(self):
         self.register_handlers()
         
     def register_handlers(self):
@@ -49,7 +46,7 @@ class SlackEventHandler:
                     contents=data
                 )
                 
-                log.info(f"Handling new Slack message {message_rid!r}")
+                self.log.info(f"Handling new Slack message {message_rid!r}")
                 
                 self.kobj_queue.push(bundle=msg_bundle)
                 
@@ -70,7 +67,7 @@ class SlackEventHandler:
                     contents=data
                 )
                 
-                log.info(f"Handling updated Slack message {message_rid!r}")
+                self.log.info(f"Handling updated Slack message {message_rid!r}")
                 
                 self.kobj_queue.push(bundle=msg_bundle)
             
@@ -81,10 +78,10 @@ class SlackEventHandler:
                     ts=event["previous_message"]["ts"]
                 )
                 
-                log.info(f"Handling deleted Slack message {message_rid!r}")
+                self.log.info(f"Handling deleted Slack message {message_rid!r}")
                 
                 self.kobj_queue.push(rid=message_rid, event_type=EventType.FORGET)
             
             else:
-                log.info(f"Ignoring unsupported Slack message subtype {subtype}")
+                self.log.info(f"Ignoring unsupported Slack message subtype {subtype}")
                 return

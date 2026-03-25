@@ -4,7 +4,7 @@ from slack_bolt.async_app import AsyncApp
 from .backfiller import Backfiller
 from .server import SlackSensorNodeServer
 from .config import SlackSensorNodeConfig
-from .handlers import update_last_processed_ts
+from .last_processed_ts_handler import LastProcessedTSHandler
 from .slack_event_handler import SlackEventHandler
 
 
@@ -16,10 +16,8 @@ class SlackSensorNode(FullNode):
         signing_secret=config.env.slack_signing_secret
     )
     
-    entrypoint = SlackSensorNodeServer
+    server = SlackSensorNodeServer
     backfiller = Backfiller
     slack_event_handler = SlackEventHandler
     
-    knowledge_handlers = FullNode.knowledge_handlers + [
-        update_last_processed_ts
-    ]
+    last_processed_ts_handler = LastProcessedTSHandler
