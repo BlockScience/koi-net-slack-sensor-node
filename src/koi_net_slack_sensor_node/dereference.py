@@ -1,7 +1,7 @@
 from rid_lib import RID
 from rid_lib.types import SlackMessage, SlackChannel, SlackUser, SlackWorkspace
 from rid_lib.ext import Bundle
-from koi_net.protocol.api_models import BundlesPayload
+from koi_net.protocol.api.models import BundlesPayload
 from slack_bolt.async_app import AsyncApp
 
 
