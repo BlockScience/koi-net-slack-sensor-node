@@ -7,7 +7,7 @@ name = "koi-net-slack-sensor-node"
 version = "0.1.0"
 description = "KOI-net Slack sensor node"
 authors = [
-    {name = "Luke Miller", email = "luke@block.science"}
+    {name = "Luke Miller", email = "luke@dynamicalsystemsgroup.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,4 +25,4 @@ dev = ["twine>=6.0", "build"]
 slack_sensor = "koi_net_slack_sensor_node"
 
 [project.urls]
-Homepage = "https://github.com/BlockScience/koi-net-slack-sensor-node/"
+Homepage = "https://github.com/DynamicalSystemsGroup/koi-net-slack-sensor-node/"
